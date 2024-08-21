@@ -15,11 +15,11 @@ const db = new pg.Client({
 
 db.connect();
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   res.send({ title: "Express" });
 });
 
-router.post("/", async (req, res) => {
+router.post("/signup", async (req, res) => {
   const user = req.body["username"];
   const userPassword = req.body["password"];
   //fetching user and password and adding it to the db
@@ -35,6 +35,39 @@ router.post("/", async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500).send("An error has occured");
+    res.redirect("/");
+  }
+});
+
+router.post("/signin", async (req, res) => {
+  const user = req.body["username"];
+  const userPassword = req.body["password"];
+  console.log(user);
+  console.log(userPassword);
+  //fetching user and password and adding it to the db
+  try {
+    const result = await db.query(
+      "SELECT password FROM users WHERE username = $1",
+      [user]
+    );
+    if (result.rows.length > 0) {
+      const currUser = result.rows[0];
+      const storedHashedPassword = currUser.password;
+      bcrypt.compare(userPassword, storedHashedPassword, (err, valid) => {
+        if (err) {
+          console.error("Error comparing passwords:", err);
+        } else {
+          if (valid) {
+            res.status(201).send("User successfully logged in");
+          } else {
+            res.send("Password does not match, try again");
+          }
+        }
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("An error has occured, try again");
   }
 });
 
